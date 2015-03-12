@@ -176,7 +176,7 @@ exports.execute = function(config, callback) {
 
                             cellData = cols[j].beforeCellWrite(r, cellData, e);
                             styleIndex = e.styleIndex || styleIndex;
-                            cellType = e.cellType || cellType;
+                            cellType = e.cellType;
                             e = undefined;
                         }     
 
