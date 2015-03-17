@@ -135,7 +135,7 @@ exports.execute = function(config, callback) {
         },
         function(callback) {
             return async.eachSeries(cols, function(col, callback) {
-                var colStyleIndex = col.styleIndex || 0;
+                var colStyleIndex = col.captionStyleIndex || 0;
                 var res = addStringCol(getColumnLetter(k+1)+1, col.caption, colStyleIndex, shareStrings);
                 k++;
                 convertedShareStrings += res[1];
