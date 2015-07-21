@@ -16,13 +16,13 @@
     "René Rössler <rene@freshx.de>"
   ],
   "license": "BSD",
-  "dependencies":{
-    "temp": "~0.7.0",
-    "zipper": "^0.3.0",
-    "async": "^0.2.10"
+  "dependencies": {
+    "async": "^0.2.10",
+    "jszip": "^2.5.0",
+    "temp": "~0.7.0"
   },
   "devDependencies": {
-     "mocha": "",
-     "should": ""
-  }  
+    "mocha": "",
+    "should": ""
+  }
 }
