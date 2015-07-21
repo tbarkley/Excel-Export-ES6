@@ -90,7 +90,7 @@ exports.execute = function (config, callback) {
         function (callback) {
             return async.eachSeries(cols, function (col, callback) {
                 var colStyleIndex = col.styleIndex || 0;
-                var res = '<x:col min="' + cn + '" max="' + cn + '" width="' + col.width ? col.width : 10 + '" customWidth="1" style="' + colStyleIndex + '"/>';
+                var res = '<x:col min="' + cn + '" max="' + cn + '" width="' + (col.width ? col.width : 10) + '" customWidth="1" style="' + colStyleIndex + '"/>';
                 cn++;
                 return write(res, callback);
             }, callback);
