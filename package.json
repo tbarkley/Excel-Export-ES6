@@ -1,6 +1,6 @@
 {
-  "name": "excel-export-fast",
-  "version": "0.5.1",
+  "name": "excel-export-es6",
+  "version": "1.0.1",
   "description": "Simple and fast data set export to Excel xlsx file",
   "main": "index.js",
   "scripts": {
@@ -20,11 +20,12 @@
   "license": "BSD",
   "dependencies": {
     "async": "^0.2.10",
-    "jszip": "^2.5.0",
+    "jszip": "^3.0.0",
     "temp": "~0.7.0"
   },
   "devDependencies": {
     "mocha": "",
+    "chai": "^3.5.0",
     "should": ""
   }
 }
