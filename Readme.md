@@ -1,15 +1,17 @@
 # excel-export #
 A simple and fast node.js module for exporting data set to Excel xlsx file. Now completely asynchronous!
 
-## Updates##
+## Updates ##
 
-Returns the path of the file (in the temp folder) instead of a buffer, this way you determine what you want to do with the file
-Written in ES6.  this helps to free RAM.
-Row can also be a Stream of Array (row).
-The Zip functionality was updated in order to be completely streamed and therefore consume less resources.
-Rewritten to be more legible and maintainable.  New test that makes sure the filepath returned exists.
+#### Consumes Less Memory ####
+#### ES6 ####
+#### Easier to read and maintain ####
+#### Accepts Array of Arrays (rows) or Stream of Array (row) ####
+#### updated dependencies ####
+#### Returns path of file instead of a buffer ####
+#### Update test ####
 
-## Just how important are these changes?
+## Just how important are these changes? ##
 The initial module allowed us to write no more than 100,000 rows, after the rewrite and using streams we are able to write more than excel can handle.
 
 ## Using excel-export ##
