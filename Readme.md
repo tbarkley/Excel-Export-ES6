@@ -3,6 +3,7 @@ A simple and fast node.js module for exporting data set to Excel xlsx file. Now 
 
 ## Updates##
 
+Returns the path of the file (in the temp folder) instead of a buffer, this way you determine what you want to do with the file
 Written in ES6.  this helps to free RAM.
 Row can also be a Stream of Array (row).
 The Zip functionality was updated in order to be completely streamed and therefore consume less resources.
@@ -62,11 +63,9 @@ Setup configuration object before passing it into the execute method.  **cols** 
             ["M&M<>'", new Date(Date.UTC(2013, 6, 9)), false, 1.61803],
             ["null date", null, true, 1.414]  
 	  	];
-	  	return nodeExcel.execute(conf, function(err, result) {
-		    res.setHeader('Content-Type', 'application/vnd.openxmlformats');
-		    res.setHeader("Content-Disposition", "attachment; filename=" + "Report.xlsx");
-		    res.end(result, 'binary');
-		});
+	  	return nodeExcel.execute(conf, function (err, path) {
+		    res.sendFile(path);
+	  	});
 	});
 
 	app.listen(3000);
