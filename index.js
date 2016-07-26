@@ -18,237 +18,235 @@ const sharedStringsBack = '</x:sst>';
 
 let sharedStringsFront = '<?xml version="1.0" encoding="UTF-8"?><x:sst xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main" uniqueCount="$count" count="$count">';
 exports.execute = function (config, callback) {
-    return new Promise((resolve, reject) => {
-        let cols = config.cols, data = config.rows, colsLength = cols.length, p, files = [], styleIndex, k = 0, cn = 1, dirPath, shareStrings = [], convertedShareStrings = '', sheet, sheetPos = 0;
+    let cols = config.cols, data = config.rows, colsLength = cols.length, p, files = [], styleIndex, k = 0, cn = 1, dirPath, shareStrings = [], convertedShareStrings = '', sheet, sheetPos = 0;
 
-        let write = (str, callback) => sheet.write(str, callback);
-        //let write = (str, callback) => callback();
-        let makeTemporaryFolder = (callback) => {
-            return temp.mkdir('xlsx', (err, dir) => {
-                if (err) {
-                    return callback(err);
-                }
-                dirPath = dir;
-                return callback();
-            });
-        };
-
-        let makeTemporaryFolderStructure = (callback) => {
-            async.waterfall([
-                (callback) => {
-                    return fs.mkdir(path.join(dirPath, 'xl'), callback);
-                },
-                (callback) => {
-                    return fs.mkdir(path.join(dirPath, 'xl', 'worksheets'), callback)
-                },
-                (callback) => {
-                    return async.parallel([
-                        (callback) => {
-                            return fs.writeFile(path.join(dirPath, 'data.zip'), templateXLSX, callback);
-                        },
-                        (callback) => {
-                            if (!config.stylesXmlFile) {
-                                return callback();
-                            }
-                            p = config.stylesXmlFile || __dirname + '/styles.xml';
-                            return fs.readFile(p, 'utf8', (err, styles) => {
-                                if (err) {
-                                    return callback(err);
-                                }
-                                p = path.join(dirPath, 'xl', 'styles.xml');
-                                files.push(p);
-                                return fs.writeFile(p, styles, callback);
-                            });
-                        }
-                    ], (err) => {
-                        return callback(err);
-                    });
-                }
-            ], callback);
-        };
-
-        let openSheet = (callback) => {
-            p = path.join(dirPath, 'xl', 'worksheets', 'sheet.xml');
-            files.push(p);
-            sheet = fs.createWriteStream(p, {
-                autoclose: false
-            });
-
-            sheet.on('open', () => {
-                callback();
-            });
-        };
-
-        let writeInitialSheetContent = (callback) => {
-            return write(sheetFront, callback);
-        };
-
-        let addColumnHeaders = (callback) => {
-            return async.waterfall([
-                (callback) => {
-                    return write('<cols>', callback);
-                },
-                (callback) => {
-                    return async.eachSeries(cols, function (col, callback) {
-                        let colStyleIndex = col.styleIndex || 0;
-                        let res = '<x:col min="' + cn + '" max="' + cn + '" width="' + (col.width ? col.width : 10) + '" customWidth="1" style="' + colStyleIndex + '"/>';
-                        cn++;
-                        return write(res, callback);
-                    }, callback);
-                },
-                (callback) => {
-                    return write('</cols><x:sheetData>', callback);
-                }
-            ], callback);
-        };
-
-        let writeRows = (callback) => {
-            let addMetadataToColumns = (callback) => {
-                return async.eachSeries(cols, (col, callback) => {
-                    let colStyleIndex = col.captionStyleIndex || 0;
-                    let res = addStringCol(getColumnLetter(k + 1) + 1, col.caption, colStyleIndex, shareStrings);
-                    k++;
-                    convertedShareStrings += res[1];
-                    return write('<x:row r="1" spans="1:' + colsLength + '">' + res[0] + '</x:row>', callback);
-                }, callback);
-            };
-
-            let subscribeToData = (callback) => {
-                data.on('data', addRow);
-
-                return callback();
-            };
-
-            let i = -1;
-            let addRow = (r) => {
-                if (r == null) return;
-
-                let j, cellData, currRow, cellType;
-
-                i++;
-                currRow = i + 2;
-                let row = '<x:row r="' + currRow + '" spans="1:' + colsLength + '">';
-                for (j = 0; j < colsLength; j++) {
-                    styleIndex = cols[j].styleIndex;
-                    cellData = r[j];
-                    cellType = cols[j].type;
-                    if (typeof cols[j].beforeCellWrite === 'function') {
-                        let e = {
-                            rowNum: currRow,
-                            styleIndex: styleIndex,
-                            cellType: cellType
-                        };
-                        cellData = cols[j].beforeCellWrite(r, cellData, e);
-                        styleIndex = e.styleIndex || styleIndex;
-                        cellType = e.cellType;
-                        e = undefined;
-                    }
-                    switch (cellType) {
-                    case 'number':
-                        row += addNumberCol(getColumnLetter(j + 1) + currRow, cellData, styleIndex);
-                        break;
-                    case 'date':
-                        row += addDateCol(getColumnLetter(j + 1) + currRow, cellData, styleIndex);
-                        break;
-                    case 'bool':
-                        row += addBoolCol(getColumnLetter(j + 1) + currRow, cellData, styleIndex);
-                        break;
-                    default:
-                        let res = addStringCol(getColumnLetter(j + 1) + currRow, cellData, styleIndex, shareStrings, convertedShareStrings);
-                        row += res[0];
-                        convertedShareStrings += res[1];
-                    }
-                }
-                row += '</x:row>';
-
-                return write(row, () => { });
-            };
-
-            let addRows = (callback) => {
-                data.forEach(addRow);
-
-                return callback();
-            };
-
-            if (Array.isArray(data)) {
-                return async.waterfall([
-                    addMetadataToColumns,
-                    addRows
-                ], callback);
-            } else {
-                return async.waterfall([
-                    addMetadataToColumns,
-                    subscribeToData
-                ], callback);
-            }
-        };
-
-        let writeFinalSheetContent = (callback) => write(sheetBack, callback);
-
-        let closeSheet = (callback) => {
-            sheet.on('close', callback);
-            sheet.destroySoon();
-        };
-
-        let writeSharedString = (callback) => {
-            if (shareStrings.length === 0) {
-                return callback();
-            }
-            sharedStringsFront = sharedStringsFront.replace(/\$count/g, shareStrings.length);
-            p = path.join(dirPath, 'xl', 'sharedStrings.xml');
-            files.push(p);
-            return fs.writeFile(p, sharedStringsFront + convertedShareStrings + sharedStringsBack, callback);
-        };
-
-        let zipFile = (err) => {
+    let write = (str, callback) => sheet.write(str, callback);
+    //let write = (str, callback) => callback();
+    let makeTemporaryFolder = (callback) => {
+        return temp.mkdir('xlsx', (err, dir) => {
             if (err) {
-                return reject(err);
+                return callback(err);
             }
+            dirPath = dir;
+            return callback();
+        });
+    };
 
-            fs.readFile(path.join(dirPath, 'data.zip'), (err, prev) => {
-                let zip = new JSZip();
-
-                files.forEach(function (file) {
-                    let relative = path.relative(dirPath, file);
-                    zip.file(relative, fs.createReadStream(file));
-                });
-
-                zip.loadAsync(prev)
-                    .then((zip) => {
-                        zip
-                            .generateNodeStream({streamFiles:true})
-                            .pipe(fs.createWriteStream(dirPath + '.xlsx'))
-                            .on('finish', function () {
-                                temp.cleanup();
-                                return resolve(dirPath + '.xlsx')
-                            });
-                    });
-            });
-        };
-
-        let finalizeZip = () => {
-            return async.waterfall([writeFinalSheetContent,
-                closeSheet,
-                writeSharedString
-            ], () => {
-                zipFile();
-            });
-        };
-
+    let makeTemporaryFolderStructure = (callback) => {
         async.waterfall([
-            makeTemporaryFolder,
-            makeTemporaryFolderStructure,
-            openSheet,
-            writeInitialSheetContent,
-            addColumnHeaders,
-            writeRows], () => {
-                if (Array.isArray(data)) {
-                    finalizeZip();
-                } else {
-                    data.on('end', finalizeZip);
+            (callback) => {
+                return fs.mkdir(path.join(dirPath, 'xl'), callback);
+            },
+            (callback) => {
+                return fs.mkdir(path.join(dirPath, 'xl', 'worksheets'), callback)
+            },
+            (callback) => {
+                return async.parallel([
+                    (callback) => {
+                        return fs.writeFile(path.join(dirPath, 'data.zip'), templateXLSX, callback);
+                    },
+                    (callback) => {
+                        if (!config.stylesXmlFile) {
+                            return callback();
+                        }
+                        p = config.stylesXmlFile || __dirname + '/styles.xml';
+                        return fs.readFile(p, 'utf8', (err, styles) => {
+                            if (err) {
+                                return callback(err);
+                            }
+                            p = path.join(dirPath, 'xl', 'styles.xml');
+                            files.push(p);
+                            return fs.writeFile(p, styles, callback);
+                        });
+                    }
+                ], (err) => {
+                    return callback(err);
+                });
+            }
+        ], callback);
+    };
+
+    let openSheet = (callback) => {
+        p = path.join(dirPath, 'xl', 'worksheets', 'sheet.xml');
+        files.push(p);
+        sheet = fs.createWriteStream(p, {
+            autoclose: false
+        });
+
+        sheet.on('open', () => {
+            callback();
+        });
+    };
+
+    let writeInitialSheetContent = (callback) => {
+        return write(sheetFront, callback);
+    };
+
+    let addColumnHeaders = (callback) => {
+        return async.waterfall([
+            (callback) => {
+                return write('<cols>', callback);
+            },
+            (callback) => {
+                return async.eachSeries(cols, function (col, callback) {
+                    let colStyleIndex = col.styleIndex || 0;
+                    let res = '<x:col min="' + cn + '" max="' + cn + '" width="' + (col.width ? col.width : 10) + '" customWidth="1" style="' + colStyleIndex + '"/>';
+                    cn++;
+                    return write(res, callback);
+                }, callback);
+            },
+            (callback) => {
+                return write('</cols><x:sheetData>', callback);
+            }
+        ], callback);
+    };
+
+    let writeRows = (callback) => {
+        let addMetadataToColumns = (callback) => {
+            return async.eachSeries(cols, (col, callback) => {
+                let colStyleIndex = col.captionStyleIndex || 0;
+                let res = addStringCol(getColumnLetter(k + 1) + 1, col.caption, colStyleIndex, shareStrings);
+                k++;
+                convertedShareStrings += res[1];
+                return write('<x:row r="1" spans="1:' + colsLength + '">' + res[0] + '</x:row>', callback);
+            }, callback);
+        };
+
+        let subscribeToData = (callback) => {
+            data.on('data', addRow);
+
+            return callback();
+        };
+
+        let i = -1;
+        let addRow = (r) => {
+            if (r == null) return;
+
+            let j, cellData, currRow, cellType;
+
+            i++;
+            currRow = i + 2;
+            let row = '<x:row r="' + currRow + '" spans="1:' + colsLength + '">';
+            for (j = 0; j < colsLength; j++) {
+                styleIndex = cols[j].styleIndex;
+                cellData = r[j];
+                cellType = cols[j].type;
+                if (typeof cols[j].beforeCellWrite === 'function') {
+                    let e = {
+                        rowNum: currRow,
+                        styleIndex: styleIndex,
+                        cellType: cellType
+                    };
+                    cellData = cols[j].beforeCellWrite(r, cellData, e);
+                    styleIndex = e.styleIndex || styleIndex;
+                    cellType = e.cellType;
+                    e = undefined;
                 }
+                switch (cellType) {
+                case 'number':
+                    row += addNumberCol(getColumnLetter(j + 1) + currRow, cellData, styleIndex);
+                    break;
+                case 'date':
+                    row += addDateCol(getColumnLetter(j + 1) + currRow, cellData, styleIndex);
+                    break;
+                case 'bool':
+                    row += addBoolCol(getColumnLetter(j + 1) + currRow, cellData, styleIndex);
+                    break;
+                default:
+                    let res = addStringCol(getColumnLetter(j + 1) + currRow, cellData, styleIndex, shareStrings, convertedShareStrings);
+                    row += res[0];
+                    convertedShareStrings += res[1];
+                }
+            }
+            row += '</x:row>';
+
+            return write(row, () => { });
+        };
+
+        let addRows = (callback) => {
+            data.forEach(addRow);
+
+            return callback();
+        };
+
+        if (Array.isArray(data)) {
+            return async.waterfall([
+                addMetadataToColumns,
+                addRows
+            ], callback);
+        } else {
+            return async.waterfall([
+                addMetadataToColumns,
+                subscribeToData
+            ], callback);
+        }
+    };
+
+    let writeFinalSheetContent = (callback) => write(sheetBack, callback);
+
+    let closeSheet = (callback) => {
+        sheet.on('close', callback);
+        sheet.destroySoon();
+    };
+
+    let writeSharedString = (callback) => {
+        if (shareStrings.length === 0) {
+            return callback();
+        }
+        sharedStringsFront = sharedStringsFront.replace(/\$count/g, shareStrings.length);
+        p = path.join(dirPath, 'xl', 'sharedStrings.xml');
+        files.push(p);
+        return fs.writeFile(p, sharedStringsFront + convertedShareStrings + sharedStringsBack, callback);
+    };
+
+    let zipFile = (err) => {
+        if (err) {
+            return callback(err);
+        }
+
+        fs.readFile(path.join(dirPath, 'data.zip'), (err, prev) => {
+            let zip = new JSZip();
+
+            files.forEach(function (file) {
+                let relative = path.relative(dirPath, file);
+                zip.file(relative, fs.createReadStream(file));
             });
-    });
+
+            zip.loadAsync(prev)
+                .then((zip) => {
+                    zip
+                        .generateNodeStream({streamFiles:true})
+                        .pipe(fs.createWriteStream(dirPath + '.xlsx'))
+                        .on('finish', function () {
+                            temp.cleanup();
+                            return callback(null, dirPath + '.xlsx')
+                        });
+                });
+        });
+    };
+
+    let finalizeZip = () => {
+        return async.waterfall([writeFinalSheetContent,
+            closeSheet,
+            writeSharedString
+        ], () => {
+            zipFile();
+        });
+    };
+
+    async.waterfall([
+        makeTemporaryFolder,
+        makeTemporaryFolderStructure,
+        openSheet,
+        writeInitialSheetContent,
+        addColumnHeaders,
+        writeRows], () => {
+            if (Array.isArray(data)) {
+                finalizeZip();
+            } else {
+                data.on('end', finalizeZip);
+            }
+        });
 
 };
 let startTag = function (obj, tagName, closed) {
