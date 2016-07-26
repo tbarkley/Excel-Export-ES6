@@ -17,7 +17,7 @@ const sharedStringsBack = '</x:sst>';
 
 
 let sharedStringsFront = '<?xml version="1.0" encoding="UTF-8"?><x:sst xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main" uniqueCount="$count" count="$count">';
-exports.execute = function (config, callback) {
+exports.execute = (config, callback) => {
     let cols = config.cols, data = config.rows, colsLength = cols.length, p, files = [], styleIndex, k = 0, cn = 1, dirPath, shareStrings = [], convertedShareStrings = '', sheet, sheetPos = 0;
 
     let write = (str, callback) => sheet.write(str, callback);
@@ -88,7 +88,7 @@ exports.execute = function (config, callback) {
                 return write('<cols>', callback);
             },
             (callback) => {
-                return async.eachSeries(cols, function (col, callback) {
+                return async.eachSeries(cols, (col, callback) => {
                     let colStyleIndex = col.styleIndex || 0;
                     let res = '<x:col min="' + cn + '" max="' + cn + '" width="' + (col.width ? col.width : 10) + '" customWidth="1" style="' + colStyleIndex + '"/>';
                     cn++;
@@ -207,7 +207,7 @@ exports.execute = function (config, callback) {
         fs.readFile(path.join(dirPath, 'data.zip'), (err, prev) => {
             let zip = new JSZip();
 
-            files.forEach(function (file) {
+            files.forEach((file) => {
                 let relative = path.relative(dirPath, file);
                 zip.file(relative, fs.createReadStream(file));
             });
@@ -217,7 +217,7 @@ exports.execute = function (config, callback) {
                     zip
                         .generateNodeStream({streamFiles:true})
                         .pipe(fs.createWriteStream(dirPath + '.xlsx'))
-                        .on('finish', function () {
+                        .on('finish', () => {
                             temp.cleanup();
                             return callback(null, dirPath + '.xlsx')
                         });
@@ -249,7 +249,7 @@ exports.execute = function (config, callback) {
         });
 
 };
-let startTag = function (obj, tagName, closed) {
+let startTag = (obj, tagName, closed) => {
     let result = '<' + tagName, p;
     for (p in obj) {
         result += ' ' + p + '=' + obj[p];
@@ -261,10 +261,10 @@ let startTag = function (obj, tagName, closed) {
     }
     return result;
 };
-let endTag = function (tagName) {
+let endTag = (tagName) => {
     return '</' + tagName + '>';
 };
-let addNumberCol = function (cellRef, value, styleIndex) {
+let addNumberCol = (cellRef, value, styleIndex) => {
     styleIndex = styleIndex || 0;
     if (value === null) {
         return '';
@@ -272,7 +272,7 @@ let addNumberCol = function (cellRef, value, styleIndex) {
         return '<x:c r="' + cellRef + '" s="' + styleIndex + '" t="n"><x:v>' + value + '</x:v></x:c>';
     }
 };
-let addDateCol = function (cellRef, value, styleIndex) {
+let addDateCol = (cellRef, value, styleIndex) => {
     styleIndex = styleIndex || 1;
     if (value === null) {
         return '';
@@ -280,7 +280,7 @@ let addDateCol = function (cellRef, value, styleIndex) {
         return '<x:c r="' + cellRef + '" s="' + styleIndex + '" t="n"><x:v>' + value + '</x:v></x:c>';
     }
 };
-let addBoolCol = function (cellRef, value, styleIndex) {
+let addBoolCol = (cellRef, value, styleIndex) => {
     styleIndex = styleIndex || 0;
     if (value === null) {
         return '';
@@ -292,7 +292,7 @@ let addBoolCol = function (cellRef, value, styleIndex) {
     }
     return '<x:c r="' + cellRef + '" s="' + styleIndex + '" t="b"><x:v>' + value + '</x:v></x:c>';
 };
-let addStringCol = function (cellRef, value, styleIndex, shareStrings) {
+let addStringCol = (cellRef, value, styleIndex, shareStrings) => {
     styleIndex = styleIndex || 0;
     if (value === null) {
         return [
@@ -314,7 +314,7 @@ let addStringCol = function (cellRef, value, styleIndex, shareStrings) {
         convertedShareStrings
     ];
 };
-let getColumnLetter = function (col) {
+let getColumnLetter = (col) => {
     if (col <= 0) {
         throw 'col must be more than 0';
     }
