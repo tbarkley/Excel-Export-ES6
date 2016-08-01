@@ -10,24 +10,24 @@ Setup configuration object before passing it into the execute method.  **cols** 
 
     let callback = function (error, path) {
         //whatever you want
-    }
-
-    ExcelExport.execute(configuration, callback);
+    };
 
     let configuration = {
         cols: columns, // Array that defines each columns
         stylesXmlFile: "PathToStyleSheet", //Optional: appends styleSheet xml to Excel
         rows: rows, // Data to be written
         name: "Name of the Tab"
-    }
+    };
     
-    OR
-    
+    **OR**
+
     // Array of configurations for multiple pages
-    let configuration = [
+    configuration = [
         configuration,
         configuration
-    ]
+    ];
+    
+    ExcelExport.execute(configuration, callback);
 
 ## Supported types ##
 Supported valid types are string, date, bool and number.  **rows** is the data to be exported. It is an Array of Array (row) or a Stream of Arrays (row). Each row should be the same length as cols.
