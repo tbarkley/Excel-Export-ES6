@@ -115,9 +115,13 @@ Styling is optional.  However, if you want to style your spreadsheet, a valid ex
                 let activeUsersQuery = {
                     active: true
                 };
-                //...
-                inactiveUsers.active = true;
-                //... return cursor as above but, with active users
+                let activeUsers = User
+                    .find(activeUsersQuery)
+                    .lean()
+                    .limit(100)
+                    .cursor(); //get cursor
+                activeUsers.active = true;
+                resolve(activeUsers);
             });
         };
 
