@@ -24,7 +24,7 @@ Setup configuration object before passing it into the execute method.  **cols** 
 **OR**
 
     // Array of configurations for multiple pages
-    configuration = [
+    let configuration = [
         configuration,
         configuration
     ];
