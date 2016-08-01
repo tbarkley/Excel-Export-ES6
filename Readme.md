@@ -189,7 +189,7 @@ Styling is optional.  However, if you want to style your spreadsheet, a valid ex
                 return config;
             });
 
-            //transform to xls
+            //since array of configs is passed in, resulting xlsx file will have multiple sheets (tabs)
             return nodeExcel.execute(configs, (err, path) => {
                 res.sendFile(path);
             });
