@@ -91,12 +91,16 @@ Styling is optional.  However, if you want to style your spreadsheet, a valid ex
 **Using Array of Mongoose Cursors for Rows and Array of Config Objects**
 
     app.get('/Excel/multisheet', (req, res) => {
+
         //get cursor for inactive users
         let _getDeactivatedUsersCursor = () => {
+        
             return new Promise((resolve, reject) => {
+            
                 let inactiveUsersQuery = {
                     active: false
                 };
+                
                 //use mongoose to query user collection
                 let inactiveUsers = User
                     .find(inactiveUsersQuery)
@@ -105,32 +109,41 @@ Styling is optional.  However, if you want to style your spreadsheet, a valid ex
                     .cursor(); //get cursor
 
                 inactiveUsers.active = false;
+                
                 resolve(inactiveUsers);
             });
         };
 
         //get cursor for active users
         let _getActiveUsersCursor = () => {
+        
             return new Promise((resolve, reject) => {
+            
                 let activeUsersQuery = {
                     active: true
                 };
+                
                 let activeUsers = User
                     .find(activeUsersQuery)
                     .lean()
                     .limit(100)
                     .cursor(); //get cursor
                 activeUsers.active = true;
+                
                 resolve(activeUsers);
             });
         };
 
         //columns for the report
         let _getReportColumns = () => {
+        
             return [{
-                styleIndex: 2, //Index from stylesXmlFile
-                caption   : 'Deactivation Date',
-                type      : 'date'
+                beforeCellWrite : (row, cellData, eOpt) => {
+                    //Do something to transform row, cellData or cell style
+                },
+                styleIndex      : 2, //Index from stylesXmlFile
+                caption         : 'Deactivation Date',
+                type            : 'date',
             }, {
                 styleIndex: 2,
                 caption   : 'Activation Date',
@@ -148,10 +161,12 @@ Styling is optional.  However, if you want to style your spreadsheet, a valid ex
 
         //get report stream
         let _getReportStream = (cursor) => {
+        
             let userStream = new stream.Transform({objectMode: true});
             
             //Implement _transform method
             userStream._transform = (user, encoding, callback) => {
+            
                 callback(null, [{
                     deactivationDate: user.deactivationDate,
                     activationDate  : user.activationDate,
@@ -159,6 +174,7 @@ Styling is optional.  However, if you want to style your spreadsheet, a valid ex
                     lastName        : user.lastName
                 }]);
             };
+            
             //Pipe cursor to stream
             return cursor.pipe(userStream);
         };
@@ -167,6 +183,7 @@ Styling is optional.  However, if you want to style your spreadsheet, a valid ex
             _getActiveUsersCursor, 
             _getDeactivatedUsersCursor
         ]).then((usersCursor) => {
+        
             //array to hold config objects
             let configs = [];
             let config = {
