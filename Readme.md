@@ -1,19 +1,33 @@
 # Excel-Export-ES6 #
 A simple and fast node.js module for exporting data set to Excel xlsx file. Now completely asynchronous!
 
-## Updates ##
-
-- Returns the path of the file (in the temp folder) instead of a buffer, this way you determine what you want to do with the file
+- Returns the path of the file (in the temp folder) instead of a buffer.
 - Written in ES6.  this helps to free RAM.
 - Row can also be a Stream of Array (row).
-- The Zip functionality was updated in order to be completely streamed and therefore consume less resources.
-- Rewritten to be more legible and maintainable.  New test that makes sure the filepath returned exists.
-
-## Just how important are these changes? ##
-The initial module allowed us to write no more than 100,000 rows, after the rewrite and using streams we are able to write more than excel can handle.
 
 ## Using excel-export ##
 Setup configuration object before passing it into the execute method.  **cols** is an array for column definition.  Column definition should have caption and type properties while width property is not required.  The unit for width property is character.   **beforeCellWrite** callback is optional.  beforeCellWrite is invoked with row, cell data and option object (eOpt detail later) parameters.  The return value from beforeCellWrite is what will get written into the cell.  
+
+    let callback = function (error, path) {
+        //whatever you want
+    }
+
+    ExcelExport.execute(configuration, callback);
+
+    let configuration = {
+        cols: columns, // Array that defines each columns
+        stylesXmlFile: "PathToStyleSheet", //Optional: appends styleSheet xml to Excel
+        rows: rows, // Data to be written
+        name: "Name of the Tab"
+    }
+    
+    OR
+    
+    // Array of configurations for multiple pages
+    let configuration = [
+        configuration,
+        configuration
+    ]
 
 ## Supported types ##
 Supported valid types are string, date, bool and number.  **rows** is the data to be exported. It is an Array of Array (row) or a Stream of Arrays (row). Each row should be the same length as cols.
@@ -24,68 +38,34 @@ Styling is optional.  However, if you want to style your spreadsheet, a valid ex
 ### Basic Example ###
 **Using Array of Arrays for Rows and Single Config Object**
 
-    var express = require('express');
-    var nodeExcel = require('excel-export-fast');
-    var app = express();
-    var REPORT_STYLES_PATH = '../resources/report_style.xml';
+    let columns = [{
+        caption: 'Title 1',
+        type: 'string'
+        width: 28.7109375
+    }, {
+        caption: 'Title 2',
+        type: 'date'
+    }, {
+        caption: 'bool',
+        type: 'bool'
+    }];
+    
+    let rows = [
+        ['row 1 column 1', 'row 1 column 2'],
+        ['row 2 column 1', 'row 2 column 2']
+    ];
+    
+    //since a single config is used, only one sheet will be generated
+    let conf = {
+        cols: columns,
+        stylesXmlFile: "PathToStyleSheet",
+        name: "Name of the Tab",
+        rows: rows
+    };
 
-    app.get('/Excel', function(req, res) {
-        //since a single config is used, only one sheet will be generated
-        var conf = {};
-        conf.stylesXmlFile = REPORT_STYLES_PATH;
-        //the name displayed on the tab of the only sheet generated in the xlsx file
-        conf.name = "Active Users";
-        //columns used in xslx sheet
-        conf.cols = [{
-            caption: 'string',
-            type: 'string',
-            beforeCellWrite: function(row, cellData) {
-                return cellData.toUpperCase();
-            },
-            width: 28.7109375
-        }, {
-            caption: 'date',
-            type: 'date',
-            beforeCellWrite: function() {
-                var originDate = new Date(Date.UTC(1899, 11, 30));
-                return function(row, cellData, eOpt) {
-
-                    if (eOpt.rowNum % 2) {
-                        eOpt.styleIndex = 1;
-                    } else {
-                        eOpt.styleIndex = 2;
-                    }
-
-                    if (cellData === null) {
-                        eOpt.cellType = 'string';
-                        return 'N/A';
-                    } else
-                        return (cellData - originDate) / (24 * 60 * 60 * 1000);
-                }
-            }()
-        }, {
-            caption: 'bool',
-            type: 'bool'
-        }, {
-            caption: 'number',
-            type: 'number'
-        }];
-        
-        //rows are passed in as array of arrays
-        conf.rows = [
-            ['pi', new Date(Date.UTC(2013, 4, 1)), true, 3.14],
-            ["e", new Date(2012, 4, 1), false, 2.7182],
-            ["M&M<>'", new Date(Date.UTC(2013, 6, 9)), false, 1.61803],
-            ["null date", null, true, 1.414]
-        ];
-        
-        return nodeExcel.execute(conf, function(err, path) {
-            res.sendFile(path);
-        });
+    return nodeExcel.execute(conf, function(err, path) {
+        console.log("Path to excel file", path);
     });
-
-    app.listen(3000);
-    console.log('Listening on port 3000');
     
 ### Advanced Example ###
 **Using Array of Mongoose Cursors for Rows and Array of Config Objects**
