@@ -18,6 +18,8 @@ Setup configuration object before passing it into the execute method.  **cols** 
         rows: rows, // Data to be written
         name: "Name of the Tab"
     };
+
+    ExcelExport.execute(configuration, callback);
     
 **OR**
 
@@ -26,7 +28,7 @@ Setup configuration object before passing it into the execute method.  **cols** 
         configuration,
         configuration
     ];
-    
+
     ExcelExport.execute(configuration, callback);
 
 ## Supported types ##
