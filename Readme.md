@@ -19,7 +19,7 @@ Setup configuration object before passing it into the execute method.  **cols** 
         name: "Name of the Tab"
     };
     
-    **OR**
+**OR**
 
     // Array of configurations for multiple pages
     configuration = [
