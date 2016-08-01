@@ -91,13 +91,13 @@ Styling is optional.  However, if you want to style your spreadsheet, a valid ex
 **Using Array of Mongoose Cursors for Rows and Array of Config Objects**
 
     app.get('/Excel/multisheet', (req, res) => {
-        //Get cursor for inactive users
+        //get cursor for inactive users
         let _getDeactivatedUsersCursor = () => {
             return new Promise((resolve, reject) => {
                 let inactiveUsersQuery = {
                     active: false
                 };
-                //Use mongoose to query user collection
+                //use mongoose to query user collection
                 let inactiveUsers = User
                     .find(inactiveUsersQuery)
                     .lean()
@@ -159,38 +159,40 @@ Styling is optional.  However, if you want to style your spreadsheet, a valid ex
             return cursor.pipe(userStream);
         };
 
-        Promise.all([_getActiveUsersCursor, _getDeactivatedUsersCursor]).then((usersCursor) => {
+        Promise.all([
+            _getActiveUsersCursor, 
+            _getDeactivatedUsersCursor
+        ]).then((usersCursor) => {
+            //array to hold config objects
+            let configs = [];
+            let config = {
+                stylesXmlFile: REPORT_STYLES_PATH,
+                name         : 'No Users',
+                cols         : _getReportColumns(),
+                rows         : []
+            };
 
-                //array to hold config objects
-                let configs = [];
-                let config = {
-                    stylesXmlFile: REPORT_STYLES_PATH,
-                    name         : 'No Users',
-                    cols         : _getReportColumns(),
-                    rows         : []
-                };
+            //create array of config objects
+            configs = usersCursor.map((cursor) => {
+                config.rows = _getReportStream(cursor);
+                if (cursor.active == true) {
+                    config.name = "Active Users";
+                    config.cols = _getReportColumns();
+                } else if (cursor.active == false) {
+                   config.name = "Deactivated Users";
+                   config.cols = _getReportColumns();
+                }
+                return config;
+            });
 
-                //create array of config objects
-                configs = usersCursor.map((cursor) => {
-                    config.rows = _getReportStream(cursor);
-                    if (cursor.active == true) {
-                        config.name = "Active Users";
-                        config.cols = _getReportColumns();
-                    } else if (cursor.active == false) {
-                       config.name = "Deactivated Users";
-                       config.cols = _getReportColumns();
-                    }
-                    return config;
-                });
-
-                //transform to xls
-                return nodeExcel.execute(configs, (err, path) => {
-                    res.sendFile(path);
-                });
-            }).catch((err) => {
-                //log error
-                console.error(err);
-                res.sendStatus(500);
+            //transform to xls
+            return nodeExcel.execute(configs, (err, path) => {
+                res.sendFile(path);
+            });
+        }).catch((err) => {
+            //log error
+            console.error(err);
+            res.sendStatus(500);
         });
     });
 
